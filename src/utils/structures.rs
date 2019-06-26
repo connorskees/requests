@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt;
 
 pub struct Headers {
     hash: HashMap<String, String>
@@ -54,5 +55,8 @@ impl Headers {
 
     pub fn key_value_as_string(self) -> Vec<String> {
         self.hash.iter().map(|(x, y)| format!("{}: {}", x.clone(), y.clone())).collect()
+impl fmt::Display for Headers {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_string())
     }
 }
