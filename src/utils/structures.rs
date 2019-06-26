@@ -12,11 +12,13 @@ impl Headers {
         }
     }
 
-    pub fn update(mut self, hash: HashMap<String, String>) {
+    pub fn update(mut self, hash: HashMap<String, String>) -> Headers {
         let hash_as_vec: Vec<(String, String)> = hash.iter().map(|(x, y)| (x.clone(), y.clone())).collect();
         for (key, value) in hash_as_vec {
             self.hash.insert(key.to_lowercase(), value);
         }
+        self
+    }
     }
 
     pub fn from_hash(hash: HashMap<String, String>) -> Headers {
