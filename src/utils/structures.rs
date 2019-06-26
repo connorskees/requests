@@ -53,8 +53,12 @@ impl Headers {
         self.hash.clear();
     }
 
-    pub fn key_value_as_string(self) -> Vec<String> {
-        self.hash.iter().map(|(x, y)| format!("{}: {}", x.clone(), y.clone())).collect()
+    pub fn as_string(&self) -> String {
+        let vec_of_strings: Vec<String> = self.hash.iter().map(|(x, y)| format!("{}: {}", x, y)).collect();
+        vec_of_strings.join("\r\n")
+    }
+}
+
 impl fmt::Display for Headers {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.as_string())
