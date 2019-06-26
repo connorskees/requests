@@ -104,3 +104,12 @@ enum Parse {
     Header,
     Body
 }
+
+pub fn default_headers() -> structures::Headers{
+        structures::Headers::from_hash(map!(
+            "Encoding" => "gzip, deflate",
+            "Accept" => "*/*",
+            "User-Agent" => "RustRequests/0.0.1",
+            "Connection" => "keep-alive"
+        ))
+    }
