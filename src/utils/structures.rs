@@ -27,7 +27,11 @@ impl Headers {
         }
     }
 
-    pub fn insert(mut self, key: String, value: String) {
+    pub fn as_hash(self) -> HashMap<String, String> {
+        self.hash
+    }
+
+    pub fn insert(&mut self, key: String, value: String) {
         self.hash.insert(key.to_lowercase(), value);
     }
 
