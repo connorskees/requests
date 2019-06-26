@@ -19,6 +19,9 @@ impl Headers {
         }
         self
     }
+
+    pub fn update_from_headers(mut self, hash: Headers) -> Headers {
+        self.update(hash.as_hash())
     }
 
     pub fn from_hash(hash: HashMap<String, String>) -> Headers {
