@@ -1,5 +1,10 @@
+use std::fmt;
 use std::time::Duration;
 
+#[path = "utils/structures.rs"]
+pub mod structures;
+
+#[derive(Debug)]
 pub struct Response {
     pub response_status: String,
     pub version: String,
@@ -10,6 +15,19 @@ pub struct Response {
     pub elapsed: Duration,
     pub ok: bool,
 }
+
+impl fmt::Display for Response {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "<HTTP Response>\nVersion: {}\nResponse Status: {}\nReason: {}\nHeaders:\n{}\n\nBody: {}",
+            self.version,
+            self.response_status,
+            self.reason,
+            self.headers,
+            self.body
+        )
+    }
 }
 //  'url': 'http://www.google.com/'
 //  'encoding': 'ISO-8859-1'
