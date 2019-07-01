@@ -1,13 +1,15 @@
 use std::time::Duration;
 
 pub struct Response {
-    reponse_status: u8,
-    url: String,
-    encoding: String,
-    reason: String,
-    elapsed: Duration,
-    content: String,
-    bytes: [u8]
+    pub response_status: String,
+    pub version: String,
+    pub headers: structures::Headers,
+    pub url: url::Url,
+    pub reason: String,
+    pub body: String,
+    pub elapsed: Duration,
+    pub ok: bool,
+}
 }
 //  'url': 'http://www.google.com/'
 //  'encoding': 'ISO-8859-1'
@@ -17,3 +19,9 @@ pub struct Response {
 //  'elapsed': datetime.timedelta(seconds=3, microseconds=76572),
 //  'request': <PreparedRequest [GET]>,
 //  'connection': <requests.adapters.HTTPAdapter object at 0x0000020BAA5454E0>}
+// enum Codes {
+//     // Informational.
+//     100 { meaning: "continue" },
+//     101 { meaning: "switching_protocols" },
+//     102 { meaning: "processing" },
+//     122 { meaning: "request_uri_too_long" },
