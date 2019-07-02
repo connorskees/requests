@@ -17,11 +17,10 @@ mod response;
 mod macros;
 
 pub struct Request {
-    method: String,
-    url: String,
-    headers: structures::Headers,
-    prepared_request: String,
-    // body: String,
+    pub method: &'static str,
+    pub url: url::Url,
+    pub headers: structures::Headers,
+    pub prepared_request: String,
 }
 
 impl Request {
