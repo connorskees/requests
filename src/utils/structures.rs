@@ -62,14 +62,24 @@ impl Headers {
         self.hash.clear();
     }
 
-    pub fn as_string(&self) -> String {
+    pub fn as_string(&self, delim: &str) -> String {
         let vec_of_strings: Vec<String> = self.hash.iter().map(|(x, y)| format!("{}: {}", x, y)).collect();
-        vec_of_strings.join("\r\n")
+        vec_of_strings.join(delim)
+    }
+
+    pub fn get(&self, key: String) -> Option<&String>  {
+        self.hash.get(&key.to_lowercase())
     }
 }
 
 impl fmt::Display for Headers {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.as_string())
+        write!(f, "{}", self.as_string("\r\n"))
+    }
+}
+
+impl fmt::Debug for Headers {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Headers {{\n{}\n}}", self.as_string("\n\t"))
     }
 }
