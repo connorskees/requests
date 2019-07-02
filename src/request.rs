@@ -96,6 +96,27 @@ impl Request {
         // println!("{:?}", std::str::from_utf8(&buffer).unwrap());
         // return self.parse_response(std::str::from_utf8(&buffer).unwrap());
     }
+
+    pub fn send(self) -> response::Response {
+        let elapsed = Instant::now();
+        let port: u16 = if self.url.scheme() == "https" { 443 } else { 80 };
+        let host = self.url.host_str().unwrap();
+        let address = &format!("{}:{}", host, port);
+        match self.url.scheme() {
+            "https" => {
+                let connector = TlsConnector::new().expect("Unable to create TLS connector");
+                let stream = TcpStream::connect(address).expect("Unable to connect to url");
+                let mut stream = connector.connect(host, stream).expect("Couldn't connect");
+                stream.write(self.prepared_request.as_bytes()).expect("Unable to send request");
+                self.read_response(stream)
+            },
+            "http" | _ => {
+                let mut stream = TcpStream::connect(address).expect(&format!("Couldn't connect to {}", address));
+                stream.write(self.prepared_request.as_bytes()).expect("Unable to send request");
+                self.read_response(stream)
+            },
+        }
+    }        
 }
 
 enum Parse {
