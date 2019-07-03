@@ -1,8 +1,10 @@
 use std::collections::HashMap;
 use std::io::prelude::*;
 use std::io::{BufReader};
-use std::net::{TcpStream, SocketAddr};
+use std::net::{TcpStream};
+use std::time::{Instant};
 
+use native_tls::TlsConnector;
 use regex::Regex;
 use url::{Url, ParseError};
 
@@ -24,77 +26,109 @@ pub struct Request {
 }
 
 impl Request {
-    pub fn new(method: String, url: String, headers: HashMap<String, String>/*, body: String*/) -> Result<Request, ParseError> {
+    pub fn new(method: &'static str, url: String, headers: HashMap<String, String>/*, body: String*/) -> Result<Request, ParseError> {
         let mut headers = default_headers().update(headers);
         let parsed_url = Url::parse(&url)?;
-        headers.insert(String::from("Host"), String::from(parsed_url.host_str().unwrap()));
+        let host = parsed_url.host_str().unwrap();
+        headers.insert(String::from("Host"), String::from(host));
         return Ok(Request {
             method: method,
-            url: String::from(parsed_url.path()),
+            url: parsed_url,
             headers: headers,
-            prepared_request: String::from("")
-            // body
+            prepared_request: String::from(""),
         })
     }
 
     pub fn prepare(&mut self) {
         let req = format!(
-            "{} {} HTTP/1.0\n{}\n\n",
+            "{} {} HTTP/1.1\r\n{}\r\n\r\n",
             self.method.to_uppercase(),
-            self.url,
-            self.headers.as_string()
+            self.url.path(),
+            self.headers.as_string("\r\n")
         );
         self.prepared_request = req;
     }
 
-    pub fn send(&self) -> response::Response {
-        let address = &SocketAddr::from(([127, 0, 0, 1], 3000));
-        let mut stream = TcpStream::connect(address).expect("Couldn't connect");
-        let result = stream.write(self.prepared_request.as_bytes());
-        // let mut buffer = Vec::new();
 
-        let f = BufReader::new(stream);
+    // fn handle_redirects(self) -> response::Response {
+
+    // }
+
+    pub fn read_response<T: std::io::Read>(self, stream: T) -> response::Response {
+        let elapsed = Instant::now();
+
+        let buf = BufReader::new(stream);
 
         let mut currently_parsing = &Parse::FirstLine;
-        let mut response = response::Response::new_blank();
+        
+        let mut version: String = String::from("");
+        let mut response_status: String = String::from("");
+        let mut reason: String = String::from("");
+        let mut ok: bool = false;
 
-        for line in f.lines() {
-            let this_line = line.unwrap();
+        let mut should_redirect = false;
+
+        let mut headers = response::structures::Headers::new();
+
+        let mut body = std::string::String::new();
+
+        for line in buf.lines() {
+            let this_line = &line.unwrap();
             match currently_parsing {
                 &Parse::FirstLine => {
-                    let first_line = Regex::new(r"(?P<version>HTTP/1.\d+) (?P<reponse_status>\d{3}) (?P<reason>[^\r\n]+)").unwrap();
-                    let caps = first_line.captures(&this_line).unwrap();
-                    let version = String::from(caps.name("version").unwrap().as_str());
-                    let reponse_status = String::from(caps.name("reponse_status").unwrap().as_str());
-                    let reason = String::from(caps.name("reason").unwrap().as_str());
-                    response.version = version;
-                    response.reponse_status = reponse_status;
-                    response.reason = reason;
+                    let first_line = Regex::new(r"(?P<version>HTTP/1.\d+) (?P<response_status>\d{3}) (?P<reason>[^\r\n]+)").unwrap();
+                    let caps = first_line.captures(this_line).expect("Missing first line");
+                    version = String::from(caps.name("version").expect("Missing HTTP version").as_str());
+                    response_status = String::from(caps.name("response_status").expect("Missing status code").as_str());
+                    ok = response_status.starts_with("2");
+                    should_redirect = response_status.starts_with("3");
+                    reason = String::from(caps.name("reason").expect("Missing reason").as_str());
                     currently_parsing = &Parse::Header;
                 },
                 &Parse::Header => {
                     if this_line == "" {
                         currently_parsing = &Parse::Body;
-                        continue
+                        continue;
                     }
                     let headers_regex = Regex::new(r"(?P<key>[^:]+):\s*(?P<value>[^\r\n]+)").unwrap();
                     if headers_regex.is_match(&this_line) {
                         let caps = headers_regex.captures(&this_line).unwrap();
                         let key = String::from(caps.name("key").unwrap().as_str());
                         let value = String::from(caps.name("value").unwrap().as_str());
-                        response.headers.insert(key, value);
+                        headers.insert(key, value);
                     }
                 },
                 &Parse::Body => {
-                    continue
+                    body = format!("{}\n{}", body, this_line);
+                    continue;
                 }
             }
         }
-        response
 
-        // let response = stream.read_to_end(&mut buffer);
-        // println!("{:?}", std::str::from_utf8(&buffer).unwrap());
-        // return self.parse_response(std::str::from_utf8(&buffer).unwrap());
+        println!("{:#?}", headers);
+
+
+        if should_redirect {
+            let location = String::from(headers.get(String::from("Location")).unwrap());
+            let heads = self.headers.as_hash();
+            println!("{:#?}", heads);
+            let mut request = Request::new(self.method, location, heads).unwrap();
+            request.prepare();
+            return request.send();
+        }
+
+        else {
+            response::Response {
+                version: version,
+                response_status: response_status,
+                reason: reason,
+                headers: headers,
+                body: body,
+                url: self.url,
+                ok: ok,
+                elapsed: elapsed.elapsed()
+            }
+        }
     }
 
     pub fn send(self) -> response::Response {
