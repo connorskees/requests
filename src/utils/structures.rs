@@ -20,13 +20,17 @@ impl Headers {
         self
     }
 
-    pub fn update_from_headers(mut self, hash: Headers) -> Headers {
+    pub fn update_from_headers(self, hash: Headers) -> Headers {
         self.update(hash.as_hash())
     }
 
     pub fn from_hash(hash: HashMap<String, String>) -> Headers {
+        let mut h: HashMap<String, String> = HashMap::new();
+        for (key, value) in hash.iter() {
+            h.insert(String::from(key).to_lowercase(), String::from(value));
+        }
         Headers {
-            hash: hash
+            hash: h
         }
     }
 
@@ -80,6 +84,6 @@ impl fmt::Display for Headers {
 
 impl fmt::Debug for Headers {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Headers {{\n{}\n}}", self.as_string("\n\t"))
+        write!(f, "Headers {{\n\t{}\n}}", self.as_string("\n\t"))
     }
 }
